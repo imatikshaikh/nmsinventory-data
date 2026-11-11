@@ -8,15 +8,15 @@ Documentation and bootstrap only. No catalogue data, images, package, or GitHub 
 
 ## Planned release contents
 
-A release is expected to provide a version manifest, machine-readable catalogue data and/or database package, checksums, release notes, source and attribution information, and an image package/assets only when distribution is permitted. Large packages are planned for GitHub Releases rather than ongoing large binary files in Git history.
+A release uses versioned GitHub Releases and provides `manifest.json`, the shared versioned JSON catalogue, release notes, SHA-256 checksums and file sizes, source/attribution information, and an optional image package only when redistribution is permitted. The application imports JSON into logically separate catalogue tables in its SQLite database; the release is not an application database.
 
-The exact file layout, schema, serialization/database format, naming, versioning, checksum algorithm, and image-reference convention remain decisions to confirm. See [`docs/RELEASE_FORMAT.md`](docs/RELEASE_FORMAT.md).
+Catalogue content version, catalogue schema version, and manifest format version are distinct. See [`docs/RELEASE_FORMAT.md`](docs/RELEASE_FORMAT.md) and the canonical `nmsinventory/docs/DATA_CONTRACT.md` in the application repository for the shared record contract. Exact schema details, versioning/compatibility policy, image layout/formats, and signing remain pending decisions.
 
 ## Shared contract and source
 
 The application consumes published releases from this repository and must work offline with its last installed catalogue. The private scraper prepares candidate packages; the application does not depend on it.
 
-The agreed primary source is `https://nms.source.gs/`. Do not use NMS Handbook. The scraper is restricted to the agreed source website. The conceptual catalogue contract includes stable internal identifiers, item names, categories/subcategories, descriptions, image references, verified stack limits, available recipe/refining relationships, provenance, update/check information, and validation status. These concepts do not claim that corresponding source fields have been verified. Unknown stack limits must remain unknown.
+The agreed primary source is `https://nms.source.gs/`. Do not use NMS Handbook. The scraper is restricted to the agreed source website. The shared contract requires immutable UUID IDs, separate recipe records, package-relative image references, provenance, and explicit validation states. Numeric stack limits are published only when verified. Retired items retain their IDs. These requirements do not claim source fields have been inspected.
 
 See `nmsinventory/docs/DATA_CONTRACT.md` in the application repository for shared semantic requirements. Resolve exact schema and release details jointly before producing packages.
 

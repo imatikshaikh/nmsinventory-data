@@ -1,51 +1,75 @@
-# Planned catalogue release format
+# Catalogue release format
 
-## Status
+## Status and shared contract
 
-This document defines the intended contents and safety requirements of a catalogue release, not a finalized file format. No data or image package is present. Exact manifest schema, file names, archive layout, serialization, versioning, and checksum details require confirmation across all three repositories before the first package is prepared.
+This repository packages and distributes the canonical versioned JSON catalogue contract defined in `nmsinventory/docs/DATA_CONTRACT.md` in the application repository. That contract is the single source for item, recipe, image, identifier, and validation semantics. This document describes the public release boundary and must not create a competing schema.
 
-The shared semantic contract is documented in `nmsinventory/docs/DATA_CONTRACT.md` in the application repository. Do not invent source fields or imply that the source site exposes a field before it has been verified.
+The private scraper may use an internal database schema of its own. Its exported JSON must conform to the shared contract. This repository receives candidate exports for review, packages approved assets, and publishes versioned GitHub Releases. The application consumes those releases only; it has no dependency on scraper code.
 
-## Distribution
+No catalogue data, images, package, or GitHub Release has been created. The agreed primary source is `https://nms.source.gs/`; do not use NMS Handbook. Do not imply that source fields have been inspected or verified before authorized inspection.
 
-- Publish versioned, validated catalogue packages through GitHub Releases.
-- Prefer GitHub Release assets for large database and image packages instead of repeatedly adding large binary archives to Git history.
-- Keep release notes and source/attribution information available with each release.
-- Do not create a release until package contents, validation, and redistribution permissions have been reviewed.
+## Release distribution and contents
 
-## Planned package contents
+Distribute reviewed packages through versioned GitHub Releases, especially for larger binary assets. A release must provide:
 
-Each release is intended to provide:
+- `manifest.json`.
+- The canonical catalogue JSON document.
+- An optional image package only when the included assets are cleared for redistribution.
+- Human-readable release notes.
 
-1. **Version manifest** — at minimum, catalogue version and release date, plus source and attribution information. The precise property names, representation, and location are not yet decided.
-2. **Catalogue data** — normalized records in a machine-readable data package and/or database package. The format and exact schema are open decisions.
-3. **Images** — an image archive or assets and corresponding references, only where redistribution rights are confirmed. Archive layout and reference syntax are open decisions.
-4. **Checksums** — checksums covering distributed package files, so the application can verify downloads. Algorithm, encoding, and exact checksum manifest format are open decisions.
-5. **Release notes** — a human-readable summary of changes, data coverage, known gaps, and relevant attribution/permission notes.
+The canonical interchange is JSON, not a SQLite database. The application imports the JSON into separate logical catalogue tables in its own SQLite database.
 
-Release asset names, compression, package compatibility policy, version numbering, and signing are not specified yet. Do not treat a suggested implementation as agreed without recording a decision.
+### Manifest requirements
 
-## Data expectations
+`manifest.json` follows the manifest concepts in the shared contract and includes:
 
-Normalized records should support stable internal identifiers; item names; category/subcategory; descriptions; image/icon references; verified stack limits; available crafting/refining relationships; source URL/provenance; last-checked or updated information; and confidence/validation status.
+- Manifest format version.
+- Catalogue content version.
+- Catalogue schema version.
+- UTC release timestamp.
+- Source and verified attribution information.
+- A listing of downloadable package assets with package-relative names/paths, byte sizes, and SHA-256 checksums.
+- Compatibility information when an approved compatibility policy exists.
 
-This is a set of semantic requirements, not a claim about source website fields or a fixed JSON schema. The source is `https://nms.source.gs/`; NMS Handbook is excluded. Unknown or unverified stack limits must not be guessed. Missing, unsupported, or conflicting source information must be represented honestly according to a validation convention that remains to be decided.
+Catalogue content version, schema version, and manifest format version are distinct. Lowercase hexadecimal is the recommended SHA-256 text encoding, pending final schema approval. The manifest does not checksum itself. Exact JSON property names, timestamp/checksum text encodings, version-numbering rules, compatibility ranges, asset names/archive layout, and release-signature policy remain pending in the application repository's `docs/DECISIONS.md`.
 
-## Rights, provenance, and validation gate
+Image records in the catalogue use package-relative paths, not remote runtime URLs. The original source URL, provenance, media format, rights/redistribution status, and validation state are recorded separately as specified by the shared contract. An optional image archive must preserve the paths referenced by the catalogue.
 
-Before any public release:
+## Data requirements
 
-- Verify that permission covers the specific source text, images, and other included material, and that the source owner has rights to grant it.
-- Record applicable attribution and licensing information.
-- Validate records and provenance; detect duplicate/conflicting records.
-- Validate image references and missing/broken images.
-- Produce and verify checksums for the release assets.
-- Test that the package can be consumed under the agreed shared contract.
+Conform to the shared contract for:
 
-The reported permission to scrape and share is not evidence that every asset's redistribution rights have been fully checked. No release is authorized by this plan.
+- Immutable UUID item and recipe IDs backed by a persistent ID registry.
+- Recipes as independent records referring to item IDs.
+- Image records and safe package-relative image references.
+- Validation states `verified`, `unknown`, `unverified`, `incomplete`, and `conflicting`.
+- Numeric stack limits only when verified, supported by evidence, and annotated with difficulty applicability only when supported.
+- Provenance and relevant timestamps without inventing fields or values absent from inspected source material.
+- Retired/legacy items retaining their IDs; never silently repurpose an ID.
 
-## Application compatibility and safety
+The exact category taxonomy, source-to-contract mapping, optional/null rules, and final JSON Schema remain pending. Examples in the shared contract are illustrative, not catalogue data.
 
-The application downloads published packages from this repository, verifies checksums, validates and installs updates atomically with rollback, and retains the last installed catalogue for offline use. Catalogue updates must never overwrite personal account, Traveller-profile, inventory, image, or history data.
+## Integrity and package validation
 
-The application does not depend on the private scraper. The scraper may prepare a candidate package, but only reviewed and approved package assets belong in a public release.
+Before publishing a release:
+
+1. Validate catalogue JSON against the approved schema version.
+2. Check UUID uniqueness, item/recipe/image references, validation states, stack-limit rules, and retired-ID/alias consistency.
+3. Check package paths for absolute paths, URL schemes, traversal, and root escapes.
+4. Validate actual image bytes and media type, file sizes, image references, and archive members. Reject unsafe archive paths, symlinks, and unexpected file types.
+5. Calculate SHA-256 and byte size for every listed downloadable asset and verify the produced release assets against those values.
+6. Document coverage, known gaps, release changes, and required attribution in release notes/manifest.
+7. Review redistribution rights and attribution for every included content and image asset. Keep confidential permission evidence private.
+8. Test that the package is consumable under the shared contract before publication.
+
+SHA-256 detects asset mismatch against the manifest; it does not by itself authenticate who produced the manifest. Whether releases require a signed manifest or trusted attestation remains an owner decision.
+
+## Rights and release gate
+
+Do not publish text, images, icons, or other source materials until permission has been verified for each relevant asset type and the source owner has rights to grant redistribution. Preserve required attribution and license notices. The reported permission to scrape and share is not proof that all material can be redistributed. Do not publish private permission correspondence or credentials.
+
+The source website remains `https://nms.source.gs/`. Exact allowed origin, redirects, subdomains, and image hosts remain pending. Do not use NMS Handbook.
+
+## Application safety
+
+The application verifies checksums and sizes, validates schema and references, validates images and safe paths, backs up the installed catalogue, and atomically imports with rollback. Catalogue updates write only catalogue tables and must never overwrite or delete household accounts, Traveller profiles, personal inventory, locations, starships, freighters, uploaded photographs, or history. Retired IDs remain available so personal inventory references do not break.
